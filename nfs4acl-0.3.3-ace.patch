@@ -1,0 +1,34 @@
+commit 75053cc0be7c4d78ef0c6b5e9954ee30b85705bc
+Author: Brian De Wolf <bldewolf@csupomona.edu>
+Date:   Tue Sep 15 14:33:55 2009 -0700
+
+    allow parsing ACEs with empty masks
+    
+    After upgrading from 0.3.2 to 0.3.3 to fix some segfaulting issues we
+    had, 0.3.3 now rejects ACEs that have empty mask fields.  This is
+    because the function parse_alloc_fields checks whether the three strings
+    are zero length.  Having a zero length "type" or "who" definitely
+    doesn't make sense, but having an empty mask is entirely possible.  It's
+    allowed in the old versions and the ZFS back-end in our setup allows
+    them too.  Even nfs4_getfacl prints them out, producing the frustrating
+    situation where nfs4_getfacl can produce ACLs that you can't apply with
+    nfs4_setfacl.
+    
+    This patch modifies the function to not check if the mask is an empty
+    string.
+    
+    Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+
+diff --git a/libnfs4acl/nfs4_ace_from_string.c b/libnfs4acl/nfs4_ace_from_string.c
+index 036d9b8..9d877fb 100644
+--- a/libnfs4acl/nfs4_ace_from_string.c
++++ b/libnfs4acl/nfs4_ace_from_string.c
+@@ -120,7 +120,7 @@ parse_alloc_fields(char *buf, char *fields[NUMFIELDS])
+ 		fields[i][len] = 0;
+ 	}
+ 
+-	if (!fields[TYPE_INDEX][0] || !fields[WHO_INDEX][0] || !fields[MASK_INDEX][0])
++	if (!fields[TYPE_INDEX][0] || !fields[WHO_INDEX][0])
+ 		goto out_free;
+ 
+ 	return 0;
